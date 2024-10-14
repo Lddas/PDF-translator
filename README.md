@@ -1,5 +1,9 @@
 # PDF Translation Automation Project
 
+
+![image](https://github.com/user-attachments/assets/2bba6c90-abbc-4ae4-840d-5d9a6b1ca990)
+
+
 ## Overview
 
 This project automates the process of extracting text and tables from a PDF, translating the text to French, and creating a new PDF with the translated content while maintaining the layout, including images and tables. The goal is to create an easy-to-use pipeline for translating documents without losing any formatting.
