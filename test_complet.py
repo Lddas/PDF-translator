@@ -306,8 +306,8 @@ def compare_tables(tabula_table, pymupdf_table):
 #-----------------------------------------------------------------------------
 #main
 
-input_pdf_path = "/Users/Admin/Documents/Infosys/Projects/PDF_translation/PDF.pdf"
-output_pdf_path = "PDF tests copy.pdf"
+input_pdf_path = "PDF.pdf"
+output_pdf_path = "PDF_translated.pdf"
 
 # Extracting images
 image_info = extract_image_info(input_pdf_path)
