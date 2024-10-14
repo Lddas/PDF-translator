@@ -1,0 +1,62 @@
+import fitz
+import tabula
+
+def extract_tabs(input_pdf):
+    doc = fitz.open(input_pdf)
+    tabs_not_sorted = []
+
+    for page_num in range(len(doc)):
+        page = doc.load_page(page_num)
+        tables = page.find_tables()
+        for table in tables:
+            tabs_not_sorted.append((table, page_num))
+
+    tabs = real_tabs(input_pdf, tabs_not_sorted)
+    cells_info = {}
+    for x, table in enumerate(tabs):
+        tab = table[0]
+        cells_info[page_num] = []
+        for j in range(tab.col_count):
+            for i in range(tab.row_count):
+                cells = fitz.make_table(tab.bbox, cols=tab.col_count, rows=tab.row_count)
+                spans = page.get_text("dict", clip=cells[i][j])["blocks"][0]["lines"][0]["spans"]
+                span = spans[0]
+                is_title = False
+                tab_values = [True, tab.row_count, tab.col_count, x, tab.bbox]
+                text = span['text']
+                x0, y0 = span['bbox'][:2]
+                font_name = span['font']
+                font_size = span['size']
+                if font_size >= 14:
+                    is_title = True
+                flags = flags_decomposer(span["flags"])
+                base_font = classify_font(flags)
+                color = fitz.sRGB_to_rgb(span["color"])
+                color = tuple(c / 255 for c in color)
+                height_col = cells[i][j][3] - cells[i][j][1]
+                pos = (x0, y0 + height_col)
+                text_info = [(text, pos, base_font, font_size, color, is_title, tab_values)]
+                cells_info[page_num].append((text.strip(), text_info))
+
+        page.apply_redactions()
+    doc.save(input_pdf, incremental=True, encryption=fitz.PDF_ENCRYPT_KEEP)
+    doc.close()
+    return cells_info
+
+def real_tabs(input_pdf, tabs_not_sorted):
+    tables = tabula.read_pdf(input_pdf, stream=True, pages='all', pandas_options={'header': None})
+    tabs_sorted = []
+    for i, table in enumerate(tables):
+        for j, (potential, page_num) in enumerate(tabs_not_sorted):
+            if compare_tables(table, potential):
+                tabs_sorted.append((potential, page_num))
+    return tabs_sorted
+
+def compare_tables(tabula_table, pymupdf_table):
+    if len(tabula_table) != pymupdf_table.row_count:
+        return False
+    for i in range(len(tabula_table)):
+        for j in range(len(tabula_table.iloc[0])):
+            if str(tabula_table.iloc[i][j]) != pymupdf_table.extract()[i][j]:
+                return False
+    return True
