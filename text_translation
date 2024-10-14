@@ -1,0 +1,10 @@
+from transformers import pipeline
+
+translator = pipeline("translation_en_to_fr", model="t5-base")
+
+def translate_text(text_blocks):
+    translated_blocks = []
+    for combined_text, block_info in text_blocks:
+        translated = translator(combined_text, max_length=512)[0]['translation_text']
+        translated_blocks.append((translated, block_info))
+    return translated_blocks
