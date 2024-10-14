@@ -1,0 +1,39 @@
+import fitz
+
+def create_translated_pdf(input_pdf, output_pdf, image_info, tables, translated_blocks):
+    doc = fitz.open(input_pdf)
+    new_doc = fitz.open()
+    
+    for page_num, page in enumerate(doc):
+        rect_page = page.rect
+        new_page = new_doc.new_page(width=rect_page.width, height=rect_page.height)
+        for translated_text, block_info in translated_blocks[page_num]:
+            tab_values = block_info[0][6]
+            x0, y0 = block_info[0][1]
+            y_offset = y0
+            x_offset = x0
+            words = translated_text.split()
+            span_index = 0
+            if not tab_values[0]:                
+                for word in words:
+                    if span_index >= len(block_info):
+                        original_text, pos, base_font, font_size, color, is_title, tab_values = block_info[-1]
+                    else:
+                        original_text, pos, base_font, font_size, color, is_title, tab_values = block_info[span_index]
+                    text_width = fitz.get_text_length(word, fontname=base_font, fontsize=font_size)
+                    if is_title and x_offset + text_width > rect_page.width:
+                        x_offset = x0
+                        y_offset += font_size * 1.2
+                    elif not is_title and x0 + x_offset + text_width > rect_page.width:
+                        x_offset = x0
+                        y_offset += font_size * 1.2
+                    new_page.insert_text((x_offset, y_offset), word, fontname=base_font, fontsize=font_size, color=color)
+                    x_offset += text_width + fitz.get_text_length(" ", fontname=base_font, fontsize=font_size)
+                    if span_index < len(block_info) and x_offset >= pos[0] + fitz.get_text_length(original_text, fontname=base_font, fontsize=font_size):
+                        span_index += 1
+                y_offset += font_size * 1.2
+            # Handle table drawing logic here...
+
+    new_doc.save(output_pdf)
+    doc.close()
+    new_doc.close()
